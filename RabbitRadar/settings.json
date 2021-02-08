@@ -6,5 +6,9 @@
   },
   "Queues": [
 
-  ] 
+  ],
+  "Slack": {
+    "WebHookEndPoint": "",
+    "ChannelName": "" 
+  } 
 }

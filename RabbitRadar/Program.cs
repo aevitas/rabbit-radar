@@ -6,6 +6,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Configuration;
 using RabbitMQ.Client;
+using Slack.Webhooks;
 
 namespace RabbitRadar
 {
@@ -44,6 +45,9 @@ namespace RabbitRadar
                         if (count > oldCount)
                         {
                             Console.WriteLine($"{queueName} contains {count - oldCount} more message(s) than before.");
+
+                            if (IsSlackConfigured())
+                                await SendWebHookAsync(queueName, oldCount, count);
                         }
 
                         messageCounts[queueName] = count;
@@ -64,6 +68,24 @@ namespace RabbitRadar
             catch (OperationCanceledException)
             {
             }
+
+            async Task SendWebHookAsync(string queueName, uint oldCount, uint newCount)
+            {
+                var slackClient = new SlackClient(configuration["Slack:WebHookEndPoint"]);
+                var channelName = configuration["Slack:ChannelName"];
+
+                Console.WriteLine($"-- Sending message to channel {channelName}..");
+
+                await slackClient.PostAsync(new SlackMessage
+                {
+                    Channel = channelName,
+                    Text = $"Queue {queueName} contains {newCount} messages, up from {oldCount}.",
+                    IconEmoji = Emoji.Ghost
+                });
+            }
+            
+            bool IsSlackConfigured() => !string.IsNullOrWhiteSpace(configuration["Slack:WebHookEndPoint"]) &&
+                !string.IsNullOrWhiteSpace(configuration["Slack:ChannelName"]);
         }
 
         private static ConnectionFactory CreateConnectionFactory(IConfiguration configuration)
