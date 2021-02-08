@@ -19,7 +19,7 @@ namespace RabbitRadar
                 .Build();
             
             var queues = configuration.GetSection("Queues").Get<List<string>>();
-            var messageCounts = queues.ToDictionary(q => q, q => (uint) 0);
+            var messageCounts = queues.ToDictionary(q => q, _ => (uint) 0);
             var connectionFactory = CreateConnectionFactory(configuration);
             var cts = new CancellationTokenSource();
 
@@ -27,6 +27,10 @@ namespace RabbitRadar
             {
                 using var connection = connectionFactory.CreateConnection();
                 using var channel = connection.CreateModel();
+
+                foreach (var q in queues)
+                    messageCounts[q] = channel.MessageCount(q);
+                
                 while (!cts.IsCancellationRequested)
                 {
                     foreach (var queueName in queues)
