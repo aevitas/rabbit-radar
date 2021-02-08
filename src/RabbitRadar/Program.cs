@@ -38,13 +38,13 @@ namespace RabbitRadar
                     {
                         var count = channel.MessageCount(queueName);
                         
-                        Console.WriteLine($"Queue {queueName} contains {count} messages.");
+                        Log($"Queue {queueName} contains {count} messages.");
 
                         messageCounts.TryGetValue(queueName, out var oldCount);
 
                         if (count > oldCount)
                         {
-                            Console.WriteLine($"{queueName} contains {count - oldCount} more message(s) than before.");
+                            Log($"{queueName} contains {count - oldCount} more message(s) than before.");
 
                             if (IsSlackConfigured())
                                 await SendWebHookAsync(queueName, oldCount, count);
@@ -57,7 +57,7 @@ namespace RabbitRadar
                 }
             }, cts.Token);
             
-            Console.WriteLine("Monitoring RabbitMQ. Press enter to stop.");
+            Log("Monitoring RabbitMQ. Hit return to stop.");
             Console.ReadLine();
 
             cts.Cancel();
@@ -74,7 +74,7 @@ namespace RabbitRadar
                 var slackClient = new SlackClient(configuration["Slack:WebHookEndPoint"]);
                 var channelName = configuration["Slack:ChannelName"];
 
-                Console.WriteLine($"-- Sending message to channel {channelName}..");
+                Log($"-- Sending message to channel {channelName}..");
 
                 await slackClient.PostAsync(new SlackMessage
                 {
@@ -86,6 +86,8 @@ namespace RabbitRadar
             
             bool IsSlackConfigured() => !string.IsNullOrWhiteSpace(configuration["Slack:WebHookEndPoint"]) &&
                 !string.IsNullOrWhiteSpace(configuration["Slack:ChannelName"]);
+
+            static void Log(string message) => Console.WriteLine($"[{DateTimeOffset.Now:g}] {message}");
         }
 
         private static ConnectionFactory CreateConnectionFactory(IConfiguration configuration)
